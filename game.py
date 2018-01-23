@@ -1,6 +1,7 @@
 import pygame
 from pygame.locals import *
 import sys
+from time import sleep
 
 class Ball(object):
 	def __init__(self, screensize, ):
@@ -117,6 +118,7 @@ class PlayerPaddle(object):
 
 def main():
 	pygame.init()
+	pygame.font.init()
 	
 	screensize = (640,480)
 	
@@ -125,7 +127,8 @@ def main():
 	
 	clock = pygame.time.Clock()
 
-	
+	font = pygame.font.Font(pygame.font.get_default_font(),48)
+
 	ball = Ball(screensize)
 	ai_paddle = CPUPaddle(screensize)
 	player_paddle = PlayerPaddle(screensize)
@@ -159,25 +162,37 @@ def main():
 		ai_paddle.update(ball)
 		player_paddle.update()
 		ball.update(player_paddle, ai_paddle)
-		
-		
-		#saying win/loose, and then exit
-		if ball.hit_edge_left:
-			print ("You won!")
-			running = False
-		elif ball.hit_edge_right:
-			print ("You lose")
-			running = False
-		
+
 		#rendering phase		
 		screen.fill((100, 100, 100))
-		
 		ai_paddle.render(screen)
 		player_paddle.render(screen)
 		ball.render(screen)
-		
-		
+
+		if ball.hit_edge_left or ball.hit_edge_right:
+			screen.fill((0,0,0))
+			
+
+		pygame.display.update()
+	
+
+		#saying win/loose, and then exit
+
+		if ball.hit_edge_left:
+			print ("You won!")
+			text = font.render("WINNER",True, (255,255,255))
+			running = False
+			screen.blit(text,(180,250))
+		elif ball.hit_edge_right:
+			print ("You lose")
+			text = font.render("GAME OVER",True,(255,255,255))
+			running = False
+			screen.blit(text,(180,250))
+	
 		pygame.display.flip()
+		if not running:
+			sleep(3)
+
 		
 	pygame.quit()
 
