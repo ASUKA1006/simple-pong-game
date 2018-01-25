@@ -3,6 +3,7 @@ from pygame.locals import *
 import sys
 from time import sleep
 
+
 class Ball(object):
 	def __init__(self, screensize, ):
 		self.screensize = screensize
@@ -50,7 +51,7 @@ class Ball(object):
 			self.direction[0] = 1
 		
 	def render(self, screen):
-		pygame.draw.circle(screen, self.color, self.rect.center, self.radius, 0 )
+		pygame.draw.circle(screen, self.color, self.rect.center, self.radius, 0)
 		pygame.draw.circle(screen,(0,0,0), self.rect.center, self.radius, 1)
 
 class CPUPaddle(object):
@@ -66,7 +67,6 @@ class CPUPaddle(object):
 		self.aiWeight = 15
 
 		self.rect = pygame.Rect(0, self.aiPaddle_Y - int(self.aiHeight*0.5), self.aiWeight, self.aiHeight)
-
 
 		self.aiSpeed = 3
 	
@@ -115,7 +115,6 @@ class PlayerPaddle(object):
 		pygame.draw.rect(screen,(0,0,0), self.rect, 1)
 
 
-
 def main():
 	pygame.init()
 	pygame.font.init()
@@ -128,15 +127,43 @@ def main():
 	clock = pygame.time.Clock()
 
 	font = pygame.font.Font(pygame.font.get_default_font(),48)
+	small_font = pygame.font.Font(pygame.font.get_default_font(),22)
 
 	ball = Ball(screensize)
 	ai_paddle = CPUPaddle(screensize)
 	player_paddle = PlayerPaddle(screensize)
 
+	Menu = True
+	
+	while Menu:
+		for event in pygame.event.get():
+			if event.type == QUIT:
+				pygame.quit()
+				quit()
+				
+			if event.type == KEYDOWN:
+				if event.key == K_SPACE:
+					Menu = False
+				if event.key == K_a:
+					pygame.quit()
+					quit()
+
+		screen.fill((1,5,38))
+		#add the "START?" screen
+		text1 = font.render("PONG START?",True,(255,7,7))
+		screen.blit(text1,(170,100))
+		#add the button screen
+		text2 = small_font.render("press SPACE to play and A to quit",True,(22,91,45))
+		screen.blit(text2,(160,250))
+
+		pygame.display.update()
+		clock.tick(15)
+
 	
 	running = True
 
 	while running:
+		
 		#limitting/reporting phase
 		clock.tick(60)
 		
@@ -156,9 +183,8 @@ def main():
 					player_paddle.OurDirection = 0
 				elif event.type == K_DOWN or player_paddle.OurDirection == 1:
 					player_paddle.OurDirection = 0
-			#"KEYDOWN" means to push the keybord and "KEYUP" means the opposite			
-				
-		#updating phase
+			
+		#updating
 		ai_paddle.update(ball)
 		player_paddle.update()
 		ball.update(player_paddle, ai_paddle)
@@ -174,7 +200,7 @@ def main():
 			
 
 		pygame.display.update()
-	
+
 
 		#saying win/loose, and then exit
 
@@ -193,7 +219,6 @@ def main():
 		if not running:
 			sleep(3)
 
-		
 	pygame.quit()
 
 if __name__ == "__main__":
