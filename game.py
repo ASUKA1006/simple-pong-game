@@ -3,52 +3,48 @@ from pygame.locals import *
 import sys
 from time import sleep
 
+screensize = (640,480)
 
 class Ball(object):
 	def __init__(self, screensize, ):
 		self.screensize = screensize
-		self.ball_X = int(screensize[0]*0.5)
-		self.ball_Y = int(screensize[1]*0.5)
+		self.position = [int(screensize[0]*0.5), int(screensize[1]*0.5)]
 		
+		# this defines the size of pong. X and Y is the center of it.
 		self.radius = 8
-		self.rect = pygame.Rect(self.ball_X-self.radius,
-					 self.ball_Y-self.radius,
+		self.rect = pygame.Rect(self.position[0]-self.radius,
+					 self.position[1]-self.radius,
 					 self.radius*2, self.radius*2) 
-# this defines the size of pong. X and Y is the center of it.
 		
 		self.color = (100,100,255)
-		self.direction = [1,1]
-		self.speedx = 2
-		self.speedy = 5
-		#code task = change speed as game progresses to make it harder
+		self.vector = [-2,5]
 		
 		self.hit_edge_right = False
 		self.hit_edge_left = False
 		
 	def update(self, player_paddle, ai_paddle):
-		self.ball_X += self.direction[0]*self.speedx
-		self.ball_Y += self.direction[1]*self.speedy
+		self.position[0] += self.vector[0]
+		self.position[1] += self.vector[1]
 		
-		self.rect.center = (self.ball_X, self.ball_Y)
+		self.rect.center = (self.position[0], self.position[1])
 		
+		if self.rect.colliderect(player_paddle.rect):
+			self.vector[0] = -abs(self.vector[0])
+		if self.rect.colliderect(ai_paddle.rect):
+			self.vector[0] = abs(self.vector[0])
+
 		if self.rect.top <= 0:
-			self.direction[1] = 1
+			self.vector[1] = abs(self.vector[1])
 		elif self.rect.bottom >= self.screensize[1]-1:
-			self.direction[1] = -1
-		#evaluate "True" after "if" code
+			self.vector[1] = -abs(self.vector[1])
 		
+		#Game over
+		#you win if you get to the left side of the screen like as ai's is, any loose here gets on the right. 
+		#you donnot wanna loose when you win
 		if self.rect.right >= self.screensize[0]-1:
 			self.hit_edge_right = True
 		elif self.rect.left <= 0:
 			self.hit_edge_left = True
-		#Game over
-		#you win if you get to the left side of the screen like as ai's is, any loose here gets on the right. 
-		#you donnot wanna loose when you win
-
-		if self.rect.colliderect(player_paddle.rect):
-			self.direction[0] = -1
-		if self.rect.colliderect(ai_paddle.rect):
-			self.direction[0] = 1
 		
 	def render(self, screen):
 		pygame.draw.circle(screen, self.color, self.rect.center, self.radius, 0)
@@ -57,26 +53,26 @@ class Ball(object):
 class CPUPaddle(object):
 	def __init__(self, screensize):
 		self.screensize = screensize
-		self.aiPaddle_X = 30
-		self.aiPaddle_Y = int(screensize[1]*0.5)
+		self.position = [30, int(screensize[1]*0.5)]
 		
 		self.aiColor = (163, 4, 4)
-		self.aiDirection = [0,1]
+		self.vector = [0,3]
 
 		self.aiHeight = 70
 		self.aiWeight = 15
 
-		self.rect = pygame.Rect(0, self.aiPaddle_Y - int(self.aiHeight*0.5), self.aiWeight, self.aiHeight)
-
-		self.aiSpeed = 3
+		self.rect = pygame.Rect(0, self.position[1] - int(self.aiHeight*0.5), self.aiWeight, self.aiHeight)
 	
-	def update(self, ball, ):
-		self.rect.center = (self.aiPaddle_X, self.aiPaddle_Y)
+	def update(self, ball):
+		self.position[0] += self.vector[0]
+		self.position[1] += self.vector[1]
+
+		self.rect.center = (self.position[0], self.position[1])
 
 		if (self.rect.top < ball.rect.top - 10):
-			self.aiPaddle_Y += self.aiSpeed
+			self.vector[1] = abs(self.vector[1])
 		elif (self.rect.top > ball.rect.bottom + 10):
-			self.aiPaddle_Y -= self.aiSpeed
+			self.vector[1] = -abs(self.vector[1])
 
 	def render(self, screen, ):
 		pygame.draw.rect(screen, self.aiColor, self.rect, 0)
@@ -86,29 +82,30 @@ class CPUPaddle(object):
 class PlayerPaddle(object):
 	def __init__(self, screensize, ):
 		self.screensize = screensize
-		self.OurPaddle_X = 610
-		self.OurPaddle_Y = int(screensize[1]* 0.5)
+		self.position = [610, int(screensize[1]* 0.5)]
 
 		self.OurPaddle_color = (14, 99, 0)
-		self.OurDirection = 0
+		self.vector = [0,0]
 
 		self.OurHeight = 70
 		self.OurWeight = 15
 
-		self.rect = pygame.Rect(0, self.OurPaddle_Y - int(self.OurHeight*0.5), self.OurWeight, self.OurHeight)
+		self.rect = pygame.Rect(0, self.position[1] - int(self.OurHeight*0.5), self.OurWeight, self.OurHeight)
 
 		self.OurSpeed = 3
 
 	def update(self):
-		self.OurPaddle_Y += self.OurDirection* self.OurSpeed
+		self.position[1] += self.vector[1]
 
-		self.rect.center = (self.OurPaddle_X, self.OurPaddle_Y)
+		self.rect.center = (self.position[0], self.position[1])
 
-		# limit the move of player paddle_Y on the screen 0<=Y<=480
+		# limit the move of player on the screen 0<=Y<=screensize_y
 		if self.rect.top < 0:
 			self.rect.top = 0
-		elif self.rect.bottom > self.screensize[1] - 1:
-			self.rect.bottom = self.screensize[1] -1
+			self.position[1] = self.rect.center[1]
+		elif self.rect.bottom > self.screensize[1]:
+			self.rect.bottom = screensize[1]
+			self.position[1] = self.rect.center[1]
 
 	def render(self, screen,):
 		pygame.draw.rect(screen, self.OurPaddle_color, self.rect, 0)
@@ -118,8 +115,6 @@ class PlayerPaddle(object):
 def main():
 	pygame.init()
 	pygame.font.init()
-	
-	screensize = (640,480)
 	
 	screen = pygame.display.set_mode(screensize)
 	pygame.display.set_caption("Hello, world")
@@ -162,6 +157,12 @@ def main():
 	
 	running = True
 
+	# keeps track of which of up/down is currently held
+	pressed = { 
+				"up"  : False, 
+				"down": False
+			  }
+
 	while running:
 		
 		#limitting/reporting phase
@@ -174,16 +175,25 @@ def main():
 
 			if event.type == KEYDOWN:
 				if event.key == K_UP:
-					player_paddle.OurDirection = -1
+					pressed["up"] = True
 				elif event.key == K_DOWN:
-					player_paddle.OurDirection = 1
+					pressed["down"] = True
 			
 			if event.type == KEYUP:
-				if event.key == K_UP or player_paddle.OurDirection == -1:
-					player_paddle.OurDirection = 0
-				elif event.type == K_DOWN or player_paddle.OurDirection == 1:
-					player_paddle.OurDirection = 0
-			
+				if event.key == K_UP:
+					pressed["up"] = False
+				elif event.key == K_DOWN:
+					pressed["down"] = False
+
+		if pressed["up"] and pressed["down"]:
+			player_paddle.vector[1] = 0
+		elif pressed["up"]:
+			player_paddle.vector[1] = -player_paddle.OurSpeed
+		elif pressed["down"]:
+			player_paddle.vector[1] = player_paddle.OurSpeed
+		else:
+			player_paddle.vector[1] = 0
+
 		#updating
 		ai_paddle.update(ball)
 		player_paddle.update()
@@ -200,7 +210,6 @@ def main():
 			
 
 		pygame.display.update()
-
 
 		#saying win/loose, and then exit
 
