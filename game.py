@@ -2,8 +2,12 @@ import pygame
 from pygame.locals import *
 import sys
 from time import sleep
+from random import random
 
-screensize = (640,480)
+max_speed_y = 8
+
+def sign(x):
+	return (1, -1)[x < 0]
 
 class Ball(object):
 	def __init__(self, screensize, ):
@@ -30,8 +34,11 @@ class Ball(object):
 		
 		if self.rect.colliderect(player_paddle.rect):
 			self.vector[0] = -abs(self.vector[0])
+			self.vector[1] += player_paddle.vector[1]
 		if self.rect.colliderect(ai_paddle.rect):
 			self.vector[0] = abs(self.vector[0])
+			self.vector[1] += ai_paddle.vector[1]
+		self.vector[1] = sign(self.vector[1]) * min(abs(self.vector[1]), max_speed_y)
 
 		if self.rect.top <= 0:
 			self.vector[1] = abs(self.vector[1])
@@ -51,28 +58,39 @@ class Ball(object):
 		pygame.draw.circle(screen,(0,0,0), self.rect.center, self.radius, 1)
 
 class CPUPaddle(object):
-	def __init__(self, screensize):
+	def __init__(self, screensize,):
 		self.screensize = screensize
-		self.position = [30, int(screensize[1]*0.5)]
 		
 		self.aiColor = (163, 4, 4)
-		self.vector = [0,3]
+		ball = Ball(screensize)
+		self.vector = [0,max_speed_y]
 
 		self.aiHeight = 70
 		self.aiWeight = 15
 
-		self.rect = pygame.Rect(0, self.position[1] - int(self.aiHeight*0.5), self.aiWeight, self.aiHeight)
-	
+		self.rect = pygame.Rect(30, int(screensize[1]*0.5) - int(self.aiHeight*0.5), self.aiWeight, self.aiHeight)
+
 	def update(self, ball):
-		self.position[0] += self.vector[0]
-		self.position[1] += self.vector[1]
 
-		self.rect.center = (self.position[0], self.position[1])
+		# the chance that we delay switching the direction of the AI
+		delay_chance = 0.8
+		if random() > delay_chance:
+			if self.rect.bottom < ball.rect.top:
+				self.vector[1] = max_speed_y + 0.5
+			elif self.rect.top > ball.rect.bottom:
+				self.vector[1] = -(max_speed_y + 0.5)
+			else:
+				# only move by the difference in position between the paddle/ball
+				diff = ball.rect.center[1] - self.rect.center[1]
+				if abs(diff) <= max_speed_y:
+					self.vector[1] = diff
 
-		if (self.rect.top < ball.rect.top - 10):
-			self.vector[1] = abs(self.vector[1])
-		elif (self.rect.top > ball.rect.bottom + 10):
-			self.vector[1] = -abs(self.vector[1])
+		self.rect.move_ip(self.vector[0], self.vector[1])
+
+		if self.rect.bottom > self.screensize[1]:
+			self.rect.bottom = self.screensize[1]
+		elif self.rect.top < 0:
+			self.rect.top = 0	
 
 	def render(self, screen, ):
 		pygame.draw.rect(screen, self.aiColor, self.rect, 0)
@@ -92,7 +110,7 @@ class PlayerPaddle(object):
 
 		self.rect = pygame.Rect(0, self.position[1] - int(self.OurHeight*0.5), self.OurWeight, self.OurHeight)
 
-		self.OurSpeed = 3
+		self.OurSpeed = 5
 
 	def update(self):
 		self.position[1] += self.vector[1]
@@ -104,7 +122,7 @@ class PlayerPaddle(object):
 			self.rect.top = 0
 			self.position[1] = self.rect.center[1]
 		elif self.rect.bottom > self.screensize[1]:
-			self.rect.bottom = screensize[1]
+			self.rect.bottom = self.screensize[1]
 			self.position[1] = self.rect.center[1]
 
 	def render(self, screen,):
@@ -113,6 +131,8 @@ class PlayerPaddle(object):
 
 
 def main():
+	screensize = (640,480)
+
 	pygame.init()
 	pygame.font.init()
 	
